@@ -14,7 +14,8 @@ local spotify_widget = require("awesome-wm-widgets.spotify-widget.spotify")
 local os = os
 local my_table = awful.util.table or gears.table -- 4.{0,1} compatibility
 local cpu_widget = require("awesome-wm-widgets.cpu-widget.cpu-widget")
-local ram_widget = require("awesome-wm-widgets.ram-widget.ram-widget")
+local ram_widget = require("awesome-wm-widgets.ram-widget.ram-graph-widget")
+local volume_widget = require('awesome-wm-widgets.volume-widget.volume')
 local common = require("awful.widget.common")
 local theme                                     = {}
 theme.dir                                       = os.getenv("HOME") .. "/.config/awesome/themes/powerarrow-dark"
@@ -102,6 +103,7 @@ theme.titlebar_maximized_button_focus_inactive  = theme.dir .. "/icons/titlebar/
 theme.titlebar_maximized_button_normal_inactive = theme.dir .. "/icons/titlebar/maximized_normal_inactive.png"
 
 
+
 local markup = lain.util.markup
 local separators = lain.util.separators
 
@@ -177,6 +179,33 @@ tasklist_buttons = my_table.join(
     awful.button({ }, 5, function () awful.client.focus.byidx(-1) end)
 )
 
+
+--Tabs
+-- For tabbed only
+theme.tabbed_spawn_in_tab = false  -- whether a new client should spawn into the focused tabbing container
+
+-- For tabbar in general
+theme.tabbar_ontop  = false
+theme.tabbar_radius = 20                -- border radius of the tabbar
+theme.tabbar_style = "default"         -- style of the tabbar ("default", "boxes" or "modern")
+theme.tabbar_font = theme.font         -- font of the tabbar
+theme.tabbar_size = 24                 -- size of the tabbar
+theme.tabbar_position = "bottom"          -- position of the tabbar
+theme.tabbar_bg_normal = theme.bg_normal     -- background color of the focused client on the tabbar
+theme.tabbar_fg_normal = theme.fg_normal     -- foreground color of the focused client on the tabbar
+theme.tabbar_bg_focus  = theme.bg_focus     -- background color of unfocused clients on the tabbar
+theme.tabbar_fg_focus  = theme.fg_focus     -- foreground color of unfocused clients on the tabbar
+theme.tabbar_bg_focus_inactive = nil   -- background color of the focused client on the tabbar when inactive
+theme.tabbar_fg_focus_inactive = nil   -- foreground color of the focused client on the tabbar when inactive
+theme.tabbar_bg_normal_inactive = nil  -- background color of unfocused clients on the tabbar when inactive
+theme.tabbar_fg_normal_inactive = nil  -- foreground color of unfocused clients on the tabbar when inactive
+theme.tabbar_disable = false           -- disable the tab bar entirely
+
+-- the following variables are currently only for the "modern" tabbar style
+--[[theme.tabbar_color_close = "#f9929b" -- chnges the color of the close button
+theme.tabbar_color_min   = "#fbdf90" -- chnges the color of the minimize button
+theme.tabbar_color_float = "#ccaced" -- chnges the color of the float button
+--]]
 
 -- Launcher
 local mylauncher = awful.widget.button({ image = theme.awesome_icon_launcher })
@@ -337,7 +366,7 @@ local bat = lain.widget.bat({
 
 -- ALSA volume
 local volicon = wibox.widget.imagebox(theme.widget_vol)
-theme.volume = lain.widget.alsa({
+theme.volume = lain.widget.pulse({
     settings = function()
         if volume_now.status == "off" then
             volicon:set_image(theme.widget_vol_mute)
@@ -506,7 +535,7 @@ function theme.at_screen_connect(s)
             --wibox.container.background(mpdicon, theme.bg_focus),
             --wibox.container.background(theme.mpd.widget, theme.bg_focus),
             -- default        
-            wibox.container.background(spotify_widget(), theme.bg_focus),
+            wibox.container.background(volume_widget(), theme.bg_focus),
             -- customized
             --[[spotify_widget({
                font = 'Ubuntu Mono 9',
@@ -514,18 +543,20 @@ function theme.at_screen_connect(s)
                pause_icon = '/usr/share/icons/Papirus-Dark/24x24/panel/spotify-indicator.svg'
             }),--]]
             arrl_dl,
-            volicon,
-            theme.volume.widget,
+            --volicon,
+            spotify_widget(),
             --arrl_ld,
             --wibox.container.background(mailicon, theme.bg_focus),
             --wibox.container.background(theme.mail.widget, theme.bg_focus),
             arrl_ld,
-            cpuwidget,
-            --memicon,
-            --mem.widget,
-            --ram_widget,
+            
+            wibox.container.background(memicon, theme.bg_focus),
+            --wibox.container.background(mem.widget, theme.bg_focus),
+            ram_widget(),
             arrl_dl,
-            memwidget,
+           -- memwidget,
+            cpuicon,
+            cpu_widget(), --pavel widget           
             --wibox.container.background(cpu.widget, theme.bg_focus),
             --[[cpu_widget({
                 width = 70,

@@ -100,7 +100,9 @@ local gui_editor   = "pluma"
 local browser      = "firefox"
 local filemanager  = "caja"
 local guieditor    = "pluma"
-local scrlocker    = "slock"
+local notflix      = "~/bin/notflix/notflix"
+local scrlocker    = "~/scripts/i3lock.sh"--"slock"
+local cheatsheet   = "~/scripts/dmenu_cheatsheets.sh"
 
 
 awful.util.terminal = terminal
@@ -108,9 +110,10 @@ awful.util.tagnames = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
 awful.layout.layouts = {
     awful.layout.suit.floating,
     awful.layout.suit.tile,
+    --bling.layout.mstab,
     --awful.layout.suit.tile.left,
-    awful.layout.suit.tile.bottom,
-    --awful.layout.suit.tile.top,
+    --awful.layout.suit.tile.bottom,
+    awful.layout.suit.tile.top,
     --awful.layout.suit.fair,
     --awful.layout.suit.fair.horizontal,
     --awful.layout.suit.spiral,
@@ -220,6 +223,8 @@ end
 beautiful.init(string.format("%s/.config/awesome/themes/%s/theme.lua", os.getenv("HOME"), chosen_theme))
 -- }}}
 
+local bling = require("bling")
+
 -- {{{ Menu
 local myawesomemenu = {
     { "hotkeys", function() return false, hotkeys_popup.show_help end },
@@ -292,6 +297,10 @@ globalkeys = my_table.join(
     -- X screen locker
     awful.key({ altkey, "Control" }, "l", function () os.execute(scrlocker) end,
               {description = "lock screen", group = "hotkeys"}),
+
+    -- cheatsheets
+    awful.key({ modkey, "Shift" }, "n", function () os.execute(cheatsheet) end,
+              {description = "cheatsheets", group = "hotkeys"}),
 
     -- Hotkeys
     awful.key({ modkey, "Shift"   }, "s",      hotkeys_popup.show_help,
@@ -394,8 +403,9 @@ globalkeys = my_table.join(
               {description = "decrement useless gaps", group = "tag"}),
 
     -- Dynamic tagging
-    awful.key({ modkey, "Shift" }, "n", function () lain.util.add_tag() end,
+    --[[awful.key({ modkey, "Shift" }, "n", function () lain.util.add_tag() end,
               {description = "add new tag", group = "tag"}),
+    --]]    
     awful.key({ modkey, "Shift" }, "r", function () lain.util.rename_tag() end,
               {description = "rename tag", group = "tag"}),
     awful.key({ modkey, "Shift" }, "Left", function () lain.util.move_tag(-1) end,
@@ -437,6 +447,14 @@ globalkeys = my_table.join(
               {description = "set layout to tile left/right", group = "layout"}),
     awful.key({ modkey, "Shift"   }, "z", function () awful.layout.set(awful.layout.suit.tile.bottom)                end,
               {description = "set layout to vertical", group = "layout"}),
+    awful.key({ modkey, "Shift"   }, "t", function () awful.layout.set(bling.layout.mstab)                end,
+              {description = "set layout to tabbed", group = "layout"}),
+    awful.key({ modkey,   "Shift" }, "p",      function () bling.module.tabbed.pop()       end,
+              {description = "pop out client from current tab group", group = "client"}),
+    awful.key({ modkey,           }, "p",      function () bling.module.tabbed.pick()       end,
+              {description = "pick client to add to tab group", group = "client"}),
+    awful.key({ modkey,   "Shift" }, "Tab",      function () bling.module.tabbed.iter()       end,
+              {description = "pick client to add to tab group", group = "client"}),
 
     awful.key({ modkey, "Control" }, "n",
               function ()
@@ -548,6 +566,8 @@ globalkeys = my_table.join(
     -- User programs
     awful.key({ modkey }, "w", function () awful.spawn(guieditor) end,
               {description = "run gui editor", group = "launcher"}),
+    awful.key({ modkey, "Shift" }, "w", function () os.execute("bash ~/bin/notflix/notflix") end,
+              {description = "run notflix", group = "launcher"}),
     awful.key({ modkey }, "e", function () awful.spawn(filemanager) end,
               {description = "run filemanager", group = "launcher"}),
     awful.key({ modkey }, "c", function () awful.spawn("mate-calc") end,
@@ -780,6 +800,7 @@ awful.rules.rules = {
 
 -- {{{ Signals
 -- Signal function to execute when a new client appears.
+--[[
 client.connect_signal("manage", function (c)
     -- Set the windows at the slave,
     -- i.e. put it at the end of others instead of setting it master.
@@ -792,6 +813,7 @@ client.connect_signal("manage", function (c)
         awful.placement.no_offscreen(c)
     end
 end)
+]]--
 
 -- Add a titlebar if titlebars_enabled is set to true in the rules.
 client.connect_signal("request::titlebars", function(c)
@@ -819,6 +841,7 @@ client.connect_signal("request::titlebars", function(c)
         { -- Left
             awful.titlebar.widget.iconwidget(c),
             buttons = buttons,
+            bling.widget.tabbed_misc.titlebar_indicator(c),
             layout  = wibox.layout.fixed.horizontal
         },
         { -- Middle
@@ -868,8 +891,10 @@ do
     "mate-settings-daemon",
     "diodon",
     "guake",
+    "/home/$USER/scripts/autolock.sh",
     "xrdb -merge ~/.Xresources",
-    --"expressvpn connect ukdo"
+    "expressvpn connect ukdo",
+    "blueman-applet"
   }
 
   for _,i in pairs(cmds) do
