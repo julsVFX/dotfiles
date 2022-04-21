@@ -221,6 +221,7 @@ end
 
 
 beautiful.init(string.format("%s/.config/awesome/themes/%s/theme.lua", os.getenv("HOME"), chosen_theme))
+beautiful.bg_systray = "#313131"
 -- }}}
 
 local bling = require("bling")

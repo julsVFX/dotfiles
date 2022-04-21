@@ -14,8 +14,10 @@ local spotify_widget = require("awesome-wm-widgets.spotify-widget.spotify")
 local os = os
 local my_table = awful.util.table or gears.table -- 4.{0,1} compatibility
 local cpu_widget = require("awesome-wm-widgets.cpu-widget.cpu-widget")
+local nvidia_widget = require("awesome-wm-widgets.cpu-widget.nvidia-widget")
 local ram_widget = require("awesome-wm-widgets.ram-widget.ram-graph-widget")
 local volume_widget = require('awesome-wm-widgets.volume-widget.volume')
+local fs_widget = require("awesome-wm-widgets.fs-widget.fs-widget")
 local common = require("awful.widget.common")
 local theme                                     = {}
 theme.dir                                       = os.getenv("HOME") .. "/.config/awesome/themes/powerarrow-dark"
@@ -68,6 +70,7 @@ theme.widget_battery                            = theme.dir .. "/icons/battery.p
 theme.widget_battery_low                        = theme.dir .. "/icons/battery_low.png"
 theme.widget_battery_empty                      = theme.dir .. "/icons/battery_empty.png"
 theme.widget_mem                                = theme.dir .. "/icons/mem.png"
+theme.widget_nvidia                             = theme.dir .. "/icons/nvidia_lgt.png"
 theme.widget_cpu                                = theme.dir .. "/icons/cpu.png"
 theme.widget_temp                               = theme.dir .. "/icons/temp.png"
 theme.widget_net                                = theme.dir .. "/icons/net.png"
@@ -80,6 +83,8 @@ theme.widget_vol_no                             = theme.dir .. "/icons/vol_no.pn
 theme.widget_vol_mute                           = theme.dir .. "/icons/vol_mute.png"
 theme.widget_mail                               = theme.dir .. "/icons/mail.png"
 theme.widget_mail_on                            = theme.dir .. "/icons/mail_on.png"
+theme.widget_vpn                                = theme.dir .. "/icons/vpn_logo.png"
+theme.widget_trixter                            = theme.dir .. "/icons/trixter_logo.png"
 theme.tasklist_plain_task_name                  = true
 theme.tasklist_disable_icon                     = false
 theme.useless_gap                               = dpi(3)
@@ -314,6 +319,9 @@ local mem = lain.widget.mem({
     end
 })
 
+-- NVIDIA
+local nvidiaicon = wibox.widget.imagebox(theme.widget_nvidia)
+
 -- CPU
 local cpuicon = wibox.widget.imagebox(theme.widget_cpu)
 local cpu = lain.widget.cpu({
@@ -365,6 +373,7 @@ local bat = lain.widget.bat({
 })
 
 -- ALSA volume
+--[[
 local volicon = wibox.widget.imagebox(theme.widget_vol)
 theme.volume = lain.widget.pulse({
     settings = function()
@@ -381,9 +390,33 @@ theme.volume = lain.widget.pulse({
         widget:set_markup(markup.font(theme.font, " " .. volume_now.level .. "% "))
     end
 })
+--]]
 
 -- Net
-local neticon = wibox.widget.imagebox(theme.widget_net)
+local vpn_check_cmd = 'cn=$(nmcli con); if [[ $(echo "$cn" | grep "ihleju" | tr -s " " | cut -d " " -f4) != "--" ]]; then echo "trixter"; elif [[ $(echo "$cn" | egrep "^tun0" | tr -s " " | cut -d " " -f4) == "tun0" ]]; then echo "vpn"; else echo ""; fi'
+--local neticon = wibox.widget.imagebox(theme.widget_net)
+local neticon = wibox.widget {
+    {
+        id = "icon",
+        widget = wibox.widget.imagebox,
+        resize = false
+    },
+    layout = wibox.container.margin(_, 0, 0, 3)
+}
+
+awful.widget.watch(
+    "bash -c '" .. vpn_check_cmd .. "'", 3,
+    function(widget, stdout)
+        if string.match(stdout, "vpn") then
+            widget.icon:set_image(theme.widget_vpn)
+        elseif string.match(stdout, "trixter") then
+            widget.icon:set_image(theme.widget_trixter)
+        else 
+            widget.icon:set_image(theme.widget_net)
+        end
+    end,
+    neticon
+)
 local net = lain.widget.net({
     settings = function()
         widget:set_markup(markup.font(theme.font,
@@ -500,8 +533,8 @@ function theme.at_screen_connect(s)
 
 
     --fancy taglist
-	local fancy_taglist = require("fancy_taglist")
-	s.mytaglist = fancy_taglist.new({ screen = s })
+	--local fancy_taglist = require("fancy_taglist")
+	--s.mytaglist = fancy_taglist.new({ screen = s })
 
 
     -- Create a taglist widget
@@ -531,10 +564,11 @@ function theme.at_screen_connect(s)
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
             --wibox.container.background(spr, theme.bg_focus),
-            arrl_ld,
+            --arrl_dl,
             --wibox.container.background(mpdicon, theme.bg_focus),
             --wibox.container.background(theme.mpd.widget, theme.bg_focus),
             -- default        
+            arrl_ld,
             wibox.container.background(volume_widget(), theme.bg_focus),
             -- customized
             --[[spotify_widget({
@@ -542,12 +576,15 @@ function theme.at_screen_connect(s)
                play_icon = '/usr/share/icons/Papirus-Light/24x24/categories/spotify.svg',
                pause_icon = '/usr/share/icons/Papirus-Dark/24x24/panel/spotify-indicator.svg'
             }),--]]
-            arrl_dl,
-            --volicon,
-            spotify_widget(),
             --arrl_ld,
+            --volicon,
+            wibox.container.background(spotify_widget(), theme.bg_focus),
+            arrl_dl,
             --wibox.container.background(mailicon, theme.bg_focus),
             --wibox.container.background(theme.mail.widget, theme.bg_focus),
+            --nvidia
+            nvidiaicon,
+            nvidia_widget(),
             arrl_ld,
             
             wibox.container.background(memicon, theme.bg_focus),
@@ -565,23 +602,26 @@ function theme.at_screen_connect(s)
                 color = "#1A1A1A"
             }),--]]
             arrl_ld,
-            wibox.container.background(tempicon, theme.bg_focus),
-            wibox.container.background(temp.widget, theme.bg_focus),
+            wibox.container.background(fsicon, theme.bg_focus),
+            wibox.container.background(fs_widget(), theme.bg_focus),            
+            arrl_dl,
+            tempicon,
+            temp.widget,
             --arrl_ld,
             --wibox.container.background(fsicon, theme.bg_focus),
             --wibox.container.background(theme.fs.widget, theme.bg_focus),
-            arrl_dl,
-            baticon,
-            bat.widget,
             arrl_ld,
-            wibox.container.background(neticon, theme.bg_focus),
-            wibox.container.background(net.widget, theme.bg_focus),
+            wibox.container.background(baticon, theme.bg_focus),
+            wibox.container.background(bat.widget, theme.bg_focus),
             arrl_dl,
-            wibox.widget.systray(),
-            clock,
-            spr,
+            neticon,
+            net.widget,
             arrl_ld,
-            wibox.container.background(s.mylayoutbox, theme.bg_focus),
+            wibox.container.background(wibox.widget.systray(), theme.bg_focus),
+            wibox.container.background(clock, theme.bg_focus),
+            wibox.container.background(spr, theme.bg_focus),
+            arrl_dl,
+            s.mylayoutbox,
         },
     }
 end
