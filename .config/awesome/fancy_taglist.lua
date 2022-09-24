@@ -1,97 +1,134 @@
 -- awesomewm fancy_taglist: a taglist that contains a tasklist for each tag.
-
--- Usage:
--- 1. Save as "fancy_taglist.lua" in ~/.config/awesome
--- 2. Add a fancy_taglist for every screen:
---          awful.screen.connect_for_each_screen(function(s)
---              ...
---              local fancy_taglist = require("fancy_taglist")
---              s.mytaglist = fancy_taglist.new({
---                  screen = s,
---                  taglist_buttons = mytagbuttons,
---                  tasklist_buttons = mytasklistbuttons
---              })
---              ...
---          end)
--- 3. Add s.mytaglist to your wibar.
-
+-- Usage (add s.mytaglist to the wibar):
+-- awful.screen.connect_for_each_screen(function(s)
+--     ...
+--     local fancy_taglist = require("fancy_taglist")
+--     s.mytaglist = fancy_taglist.new({
+--         screen = s,
+--         taglist = { buttons = mytagbuttons },
+--         tasklist = { buttons = mytasklistbuttons }
+--     })
+--     ...
+-- end)
+--
+-- If you want rounded corners, try this in your theme:
+-- theme.taglist_shape = function(cr, w, h)
+--     return gears.shape.rounded_rect(cr, w, h, theme.border_radius)
+-- end
 local awful = require("awful")
+local beautiful = require("beautiful")
+local gears = require("gears")
 local wibox = require("wibox")
+
+local dpi = beautiful.xresources.apply_dpi
+local internal_spacing = dpi(6)
+local box_height = dpi(5)
+local box_width = dpi(10)
+local icon_size = dpi(20)
+
+local function box_margins(widget)
+    return {
+        {widget, widget = wibox.container.place},
+        top = box_height,
+        bottom = box_height,
+        left = box_width,
+        right = box_width,
+        widget = wibox.container.margin
+    }
+end
+
+local function constrain_icon(widget)
+    return {
+        {
+            widget,
+            height = icon_size,
+            strategy = 'exact',
+            widget = wibox.container.constraint
+        },
+        widget = wibox.container.place
+    }
+end
+
+local function fancy_tasklist(cfg, tag)
+    local function only_this_tag(c, _)
+        for _, t in ipairs(c:tags()) do if t == tag then return true end end
+        return false
+    end
+
+    local overrides = {
+        filter = only_this_tag,
+        layout = {
+            spacing = 7,
+            layout = wibox.layout.fixed.horizontal
+        },
+        widget_template = {
+            id = "clienticon",
+            widget = awful.widget.clienticon,
+
+            create_callback = function(self, c, _, _)
+                self:get_children_by_id("clienticon")[1].client = c
+            end
+        }
+    }
+    return awful.widget.tasklist(gears.table.join(cfg, overrides))
+end
 
 local module = {}
 
-local generate_filter = function(t)
-	return function(c, scr)
-		local ctags = c:tags()
-		for _, v in ipairs(ctags) do
-			if v == t then
-				return true
-			end
-		end
-		return false
-	end
-end
+-- @param cfg.screen
+-- @param cfg.tasklist -> see awful.widget.tasklist
+-- @param cfg.taglist  -> see awful.widget.taglist
+function module.new(cfg)
+    cfg = cfg or {}
+    local taglist_cfg = cfg.taglist or {}
+    local tasklist_cfg = cfg.tasklist or {}
 
-local fancytasklist = function(cfg, t)
-	return awful.widget.tasklist({
-		screen = cfg.screen or awful.screen.focused(),
-		filter = generate_filter(t),
-		buttons = cfg.tasklist_buttons,
-		widget_template = {
-			{
-				id = "clienticon",
-				widget = awful.widget.clienticon,
-			},
-			layout = wibox.layout.stack,
-			create_callback = function(self, c, _, _)
-				self:get_children_by_id("clienticon")[1].client = c
-				awful.tooltip({
-					objects = { self },
-					timer_function = function()
-						return c.name
-					end,
-				})
-			end,
-		},
-	})
-end
+    local screen = cfg.screen or awful.screen.focused()
+    taglist_cfg.screen = screen
+    tasklist_cfg.screen = screen
 
-function module.new(config)
-	local cfg = config or {}
+    local function update_callback(self, tag, _, _)
+        -- make sure that empty tasklists take up no extra space
+        local list_separator = self:get_children_by_id("list_separator")[1]
+        if #tag:clients() == 0 then
+            list_separator.spacing = 0
+        else
+            list_separator.spacing = internal_spacing
+        end
+    end
 
-	local s = cfg.screen or awful.screen.focused()
-	local taglist_buttons = cfg.taglist_buttons
+    local function create_callback(self, tag, _index, _tags)
+        local tasklist = fancy_tasklist(tasklist_cfg, tag)
+        self:get_children_by_id("tasklist_placeholder")[1]:add(tasklist)
+        update_callback(self, tag, _index, _tags)
+    end
 
-	return awful.widget.taglist({
-		screen = s,
-		filter = awful.widget.taglist.filter.all,
-		widget_template = {
-			{
-				{
-					-- tag
-					{
-						id = "text_role",
-						widget = wibox.widget.textbox,
-						align = "center",
-					},
-					-- tasklist
-					{
-						id = "tasklist_placeholder",
-						layout = wibox.layout.fixed.horizontal,
-					},
-					layout = wibox.layout.fixed.horizontal,
-				},
-				id = "background_role",
-				widget = wibox.container.background,
-			},
-			layout = wibox.layout.fixed.horizontal,
-			create_callback = function(self, _, index, _)
-				local t = s.tags[index]
-				self:get_children_by_id("tasklist_placeholder")[1]:add(fancytasklist(cfg, t))
-			end,
-		},
-		buttons = taglist_buttons,
-	})
+    local overrides = {
+        filter = function (t) return t.selected or #t:clients() > 0 end, --awful.widget.taglist.filter.all,
+        widget_template = {
+            box_margins {
+                -- tag
+                {
+                    id = "text_role",
+                    widget = wibox.widget.textbox,
+                    align = "center"
+                },
+                -- tasklist
+                constrain_icon {
+                    id = "tasklist_placeholder",
+                    layout = wibox.layout.fixed.horizontal
+                },
+                id = "list_separator",
+                spacing = internal_spacing,
+                layout = wibox.layout.fixed.horizontal
+            },
+            id = "background_role",
+            widget = wibox.container.background,
+            create_callback = create_callback,
+            update_callback = update_callback
+        }
+    }
+    return awful.widget.taglist(gears.table.join(taglist_cfg, overrides))
 end
 
 return module

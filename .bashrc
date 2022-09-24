@@ -21,12 +21,13 @@ source ~/prompt.sh
 export TERM='screen-256color'
 #source /usr/share/doc/libopencolorio-dev/examples/setup_ocio.sh
 #export OCIO="~/ocio/aces_1.0.3/config.ocio"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/DJV/lib/
+
 export PYTHONPATH=${PYTHONPATH}:/usr/local/USD/lib/python
 export ARNOLD_HOME=/opt/solidangle/mtoa/2019/
-export ARNOLD_ROOT=/opt/Autodesk/arnold/7.0.0.3/ #/opt/solidangle/arnold-6.1.0.1/
+export ARNOLD_ROOT=/opt/Autodesk/arnold/7.1.3.0/ #/opt/solidangle/arnold-6.1.0.1/
 export ARNOLD_PATH=$ARNOLD_ROOT
-export ARNOLD_PLUGIN_PATH=/home/$USER/shaders/osl:/home/$USER/shaders/arnold:/home/$USER/bin/arnold-usd/procedural/:/home/$USER/bin/gaffer-0.61.3.0-linux-python2/arnold/plugins/
+export GAFFER_HOME=/home/$USER/bin/gaffer-1.0.2.0-linux-python2/
+export ARNOLD_PLUGIN_PATH=/home/$USER/shaders/osl:/home/$USER/shaders/arnold:/home/$USER/bin/arnold-usd/procedural/:$GAFFER_HOME/arnold/plugins/
 export RMSTREE=/opt/pixar/RenderManForMaya-22.4
 export RMANTREE=/opt/pixar/RenderManProServer-22.4
 export RMANFB=it 
@@ -35,12 +36,15 @@ export MAYA_SCRIPT_PATH=$RMSTREE/scripts
 export MAYA_MODULE_PATH=$RMSTREE/etc:$ARNOLD_HOME
 export MAYA_RENDER_DESC_PATH=$ARNOLD_HOME
 export XBMLANGPATH=”$RMSTREE/icons/%B” 
-export PATH=$PATH:${RMANTREE}/bin:${RMSTREE}/bin:$ARNOLD_HOME/bin:/usr/local/USD/bin:/home/$USER/bin/gaffer-0.53.4.0-linux/bin/:/usr/local/USD/bin
+export PATH=$PATH:${RMANTREE}/bin:${RMSTREE}/bin:$ARNOLD_HOME/bin:/usr/local/USD/bin:$GAFFER_HOME/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/DJV/lib/:$GAFFER_HOME/lib
 export solidangle_LICENSE=5053@localhost
 #export OCIO="$HOME/OCIO/imageworks-OpenColorIO-Configs-84425e4/spi-vfx/config.ocio"
 export EDITOR=pluma
 export TMUX=''
+ export GLIBC_TUNABLES=glibc.rtld.dynamic_sort=2 #to speed up Unreal
 QT_QPA_FONTDIR=/usr/share/fonts/truetype
+
 
 
 #tmux
@@ -51,7 +55,6 @@ tmux source ~/.tmux.conf
 ################
 
 #apps
-alias gaffer='~/bin/gaffer-0.61.3.0-linux-python2/bin/gaffer'
 alias natron='/opt/Natron2/Natron'
 alias katana='~/.katanaLauncher.sh'
 alias mari='/usr/local/Mari4.2v1/mari --nc'
@@ -59,7 +62,6 @@ alias nuke='/usr/local/Nuke13.1v1/Nuke13.1 --nc'
 alias krita='/opt/Krita/krita-4.1.7-x86_64.appimage'
 alias photoscan='export PSHOME=/opt/photoscan/1.3.4.5067 export QT_PLUGIN_PATH=$PSHOME && export LD_LIBRARY_PATH=/usr/lib:$PSHOME && $PSHOME/photoscan'
 alias houdini='cd /opt/hfs19.0 && source houdini_setup_bash && houdini'
-alias blender='/opt/blender/blender'
 alias r='/opt/resolve/bin/resolve'
 alias djv='/usr/local/DJV2/bin/djv.sh'
 alias ue='~/bin/UnrealEngine/Engine/Binaries/Linux/UE4Editor'
@@ -68,7 +70,7 @@ alias sbl='/opt/sublime_text/sublime_text'
 alias ev='expressvpn'
 alias t='mate-terminal -e tmux'
 alias c='mate-calc'
-
+alias ue='~/bin/UnrealEngine/Engine/Binaries/Linux/UnrealEditor'
 
 #useful unixy things
 alias ls='ls --color=auto'
@@ -107,7 +109,6 @@ alias unsetbeamer='~/Documents/bash_playground/./unset_beamer.sh'
 alias playlist_shuffle='sh ~/Documents/playlist_shuffle.sh'
 alias resource='source ~/.bashrc'
 alias gpc='mkdir transcoded; for i in *.MP4; do ffmpeg -i $i -vcodec mjpeg -q:v 2 -acodec pcm_s16be -q:a 0 -f mov transcoded/${i%.*}.mov; done'
-alias notflix='~/bin/notflix/notflix'
 
 
 #awesome specific

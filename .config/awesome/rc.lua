@@ -92,6 +92,8 @@ local themes = {
 }
 
 local chosen_theme = themes[7]
+local titlebar_margins = dpi(4)
+local titlebar_size = dpi(21)
 local modkey       = "Mod4"
 local altkey       = "Mod1"
 local terminal     = "mate-terminal -e 'tmux -u'"
@@ -137,7 +139,6 @@ awful.layout.layouts = {
     --lain.layout.termfair.center,
 }
 
-titlebar_size = dpi(16)
 
 awful.util.taglist_buttons = my_table.join(
     awful.button({ }, 1, function(t) t:view_only() end),
@@ -161,7 +162,7 @@ awful.util.tasklist_buttons = my_table.join(
         if c == client.focus then
             c.minimized = true
         else
-            --c:emit_signal("request::activate", "tasklist", {raise = true})<Paste>
+            c:emit_signal("request::activate", "tasklist", {raise = true})
 
             -- Without this, the following
             -- :isvisible() makes no sense
@@ -216,6 +217,20 @@ function toggle_roll_up_or_shade(c)
         c:geometry{ height = titlebar_size }
         --naughty.notify({ text = c })
     end
+end
+
+--doubleclick event handler
+function double_click_event_handler(double_click_event)
+    if double_click_timer then
+        double_click_timer:stop()
+        double_click_timer = nil
+        return true
+    end
+
+    double_click_timer = gears.timer.start_new(0.20, function()
+        double_click_timer = nil
+        return false
+    end)
 end
 
 
@@ -282,9 +297,9 @@ awful.screen.connect_for_each_screen(function(s) beautiful.at_screen_connect(s) 
 
 -- {{{ Mouse bindings
 root.buttons(my_table.join(
-    awful.button({ }, 3, function () awful.util.mymainmenu:toggle() end),
-    awful.button({ }, 4, awful.tag.viewnext),
-    awful.button({ }, 5, awful.tag.viewprev)
+    awful.button({ }, 3, function () awful.util.mymainmenu:toggle() end)
+    --awful.button({ }, 4, awful.tag.viewnext),
+    --awful.button({ }, 5, awful.tag.viewprev)
 ))
 -- }}}
 
@@ -436,10 +451,10 @@ globalkeys = my_table.join(
               {description = "increase the number of columns", group = "layout"}),
     awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1, nil, true)    end,
               {description = "decrease the number of columns", group = "layout"}),
-    awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
+    --[[awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
               {description = "select next", group = "layout"}),
     awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(-1)                end,
-              {description = "select previous", group = "layout"}),
+              {description = "select previous", group = "layout"}),--]]
     awful.key({ modkey, "Shift"   }, "f", function () awful.layout.set(awful.layout.suit.floating)                end,
               {description = "set layout to floating", group = "layout"}),
     awful.key({ modkey, "Shift"   }, "m", function () awful.layout.set(awful.layout.suit.max)                end,
@@ -582,9 +597,14 @@ globalkeys = my_table.join(
               {description = "show the menubar", group = "launcher"})
     --]]
     --dmenu
-    awful.key({ modkey }, "x", function ()
-            os.execute(string.format("dmenu_run -i -fn 'Monospace' -nb '%s' -nf '%s' -sb '%s' -sf '%s'",
+    --[[awful.key({ modkey }, "x", function ()
+            os.execute(string.format("dmenu_run -i -fn 'SF Pro Display-20' -nb '%s' -nf '%s' -sb '%s' -sf '%s'",
             beautiful.bg_normal, beautiful.fg_normal, beautiful.bg_focus, beautiful.fg_focus))
+        end,
+        {description = "show dmenu", group = "launcher"}),--]]
+    --rofi
+    awful.key({ modkey }, "x", function ()
+            os.execute("~/.config/rofi/launchers/text/launcher.sh")
         end,
         {description = "show dmenu", group = "launcher"}),
     
@@ -791,7 +811,7 @@ awful.rules.rules = {
     { rule = { class = "Guake" },
       properties = { floating = true, titlebars_enabled = false } },
 
-    { rule = { class = "UE4Editor" },
+    { rule = { class = "UnrealEditor" },
       properties = { titlebars_enabled = false } },
 
     { rule = { class = "Steam" },
@@ -801,20 +821,14 @@ awful.rules.rules = {
 
 -- {{{ Signals
 -- Signal function to execute when a new client appears.
---[[
-client.connect_signal("manage", function (c)
-    -- Set the windows at the slave,
-    -- i.e. put it at the end of others instead of setting it master.
-    if not awesome.startup then awful.client.setslave(c) end
 
-    if awesome.startup and
-      not c.size_hints.user_position
-      and not c.size_hints.program_position then
-        -- Prevent clients from being unreachable after screen count changes.
-        awful.placement.no_offscreen(c)
+--rounded corners
+client.connect_signal("manage", function (c)
+    c.shape = function(cr,w,h)
+        gears.shape.rounded_rect(cr,w,h,5)
     end
 end)
-]]--
+
 
 -- Add a titlebar if titlebars_enabled is set to true in the rules.
 client.connect_signal("request::titlebars", function(c)
@@ -829,7 +843,13 @@ client.connect_signal("request::titlebars", function(c)
     local buttons = my_table.join(
         awful.button({ }, 1, function()
             c:emit_signal("request::activate", "titlebar", {raise = true})
-            awful.mouse.client.move(c)
+            -- WILL EXECUTE THIS ON DOUBLE CLICK
+            if double_click_event_handler() then
+                c.maximized = not c.maximized
+                c:raise()
+            else
+                awful.mouse.client.move(c)
+            end
         end),
         awful.button({ }, 2, function() c:lower() end),
         awful.button({ }, 3, function()
@@ -839,28 +859,40 @@ client.connect_signal("request::titlebars", function(c)
     )
 
     awful.titlebar(c, {size = titlebar_size}) : setup {
-        { -- Left
-            awful.titlebar.widget.iconwidget(c),
-            buttons = buttons,
-            bling.widget.tabbed_misc.titlebar_indicator(c),
-            layout  = wibox.layout.fixed.horizontal
+        {
+            { -- Left
+                awful.titlebar.widget.iconwidget(c),
+                buttons = buttons,
+                bling.widget.tabbed_misc.titlebar_indicator(c),
+                layout  = wibox.layout.fixed.horizontal
+            },
+	        margins = titlebar_margins,
+	        widget = wibox.container.margin
         },
         { -- Middle
-            { -- Title
-                align  = "center",
-                widget = awful.titlebar.widget.titlewidget(c)
+            {
+                { -- Title
+                    align  = "center",
+                    widget = awful.titlebar.widget.titlewidget(c)
+                },
+                buttons = buttons,
+                layout  = wibox.layout.flex.horizontal
             },
-            buttons = buttons,
-            layout  = wibox.layout.flex.horizontal
+	        margins = dpi(1),
+	        widget = wibox.container.margin
         },
-        { -- Right
-            awful.titlebar.widget.floatingbutton (c),
-            awful.titlebar.widget.maximizedbutton(c),
-            awful.titlebar.widget.stickybutton   (c),
-            awful.titlebar.widget.ontopbutton    (c),
-            awful.titlebar.widget.closebutton    (c),
-            layout = wibox.layout.fixed.horizontal()
-        },
+        {
+            { -- Right
+                --awful.titlebar.widget.floatingbutton (c),
+                --awful.titlebar.widget.maximizedbutton(c),
+                --awful.titlebar.widget.stickybutton   (c),
+                --awful.titlebar.widget.ontopbutton    (c),
+                awful.titlebar.widget.closebutton    (c),
+                layout = wibox.layout.fixed.horizontal()
+            },
+	        margins = titlebar_margins,
+	        widget = wibox.container.margin
+        },   
         layout = wibox.layout.align.horizontal
     }
 end)
@@ -891,10 +923,11 @@ do
     "nm-applet",
     "mate-settings-daemon",
     "diodon",
+    "picom -r 10 -o 0.5 -t -10 -l -10 -c -b",
     "guake",
     "/home/$USER/scripts/autolock.sh",
     "xrdb -merge ~/.Xresources",
-    "expressvpn connect ukdo",
+    --"expressvpn connect ukdo",
     "blueman-applet"
   }
 
