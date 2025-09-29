@@ -20,30 +20,33 @@ source ~/prompt.sh
 ################
 export TERM='screen-256color'
 #source /usr/share/doc/libopencolorio-dev/examples/setup_ocio.sh
-#export OCIO="~/ocio/aces_1.0.3/config.ocio"
+export OCIO="$HOME/ocio/spi-vfx/config.ocio"
 
-export PYTHONPATH=${PYTHONPATH}:/usr/local/USD/lib/python
-export ARNOLD_HOME=/opt/solidangle/mtoa/2019/
-export ARNOLD_ROOT=/opt/Autodesk/arnold/7.1.3.0/ #/opt/solidangle/arnold-6.1.0.1/
+#export PYTHONPATH=${PYTHONPATH}:/usr/local/USD/lib/python
+export ARNOLD_HOME=/opt/Autodesk/mtoa/5.2.2.1-linux-2023/
+export ARNOLD_ROOT=/opt/Autodesk/arnold/7.4.3.1/
 export ARNOLD_PATH=$ARNOLD_ROOT
-export GAFFER_HOME=/home/$USER/bin/gaffer-1.0.2.0-linux-python2/
-export ARNOLD_PLUGIN_PATH=/home/$USER/shaders/osl:/home/$USER/shaders/arnold:/home/$USER/bin/arnold-usd/procedural/:$GAFFER_HOME/arnold/plugins/
+export GAFFER_HOME=/home/$USER/bin/gaffer-1.5.16.1-linux-gcc11
+export ARNOLD_PLUGIN_PATH=/home/$USER/shaders/osl:/home/$USER/shaders/arnold
 export RMSTREE=/opt/pixar/RenderManForMaya-22.4
 export RMANTREE=/opt/pixar/RenderManProServer-22.4
-export RMANFB=it 
-export MAYA_PLUG_IN_PATH=$RMSTREE/plug-ins
-export MAYA_SCRIPT_PATH=$RMSTREE/scripts
-export MAYA_MODULE_PATH=$RMSTREE/etc:$ARNOLD_HOME
-export MAYA_RENDER_DESC_PATH=$ARNOLD_HOME
+export RMANFB=it
+export MAYA_NO_HOME=1
+#export MAYA_PLUG_IN_PATH=$RMSTREE/plug-ins
+#export MAYA_SCRIPT_PATH=$RMSTREE/scripts
+#export MAYA_MODULE_PATH=$RMSTREE/etc:$ARNOLD_HOME
+#export MAYA_RENDER_DESC_PATH=$ARNOLD_HOME
+export HTOA=/opt/Autodesk/htoa/htoa-6.1.4.1_rc2f7eb9_houdini-19.5.435/htoa-6.1.4.1_rc2f7eb9_houdini-19.5.435
+export HTOA_PLUGIN_PATH=$HTOA/arnold
 export XBMLANGPATH=”$RMSTREE/icons/%B” 
-export PATH=$PATH:${RMANTREE}/bin:${RMSTREE}/bin:$ARNOLD_HOME/bin:/usr/local/USD/bin:$GAFFER_HOME/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/DJV/lib/:$GAFFER_HOME/lib
+export PATH=$PATH:${RMANTREE}/bin:${RMSTREE}/bin:/usr/local/USD/bin:$ARNOLD_ROOT/bin:/opt/hpremote/rgreceiver
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/DJV/lib/
 export solidangle_LICENSE=5053@localhost
-#export OCIO="$HOME/OCIO/imageworks-OpenColorIO-Configs-84425e4/spi-vfx/config.ocio"
 export EDITOR=pluma
 export TMUX=''
  export GLIBC_TUNABLES=glibc.rtld.dynamic_sort=2 #to speed up Unreal
 QT_QPA_FONTDIR=/usr/share/fonts/truetype
+export KATANA_ENABLE_OPWRITE_NODE=1
 
 
 
@@ -58,11 +61,13 @@ tmux source ~/.tmux.conf
 alias natron='/opt/Natron2/Natron'
 alias katana='~/.katanaLauncher.sh'
 alias mari='/usr/local/Mari4.2v1/mari --nc'
-alias nuke='/usr/local/Nuke13.1v1/Nuke13.1 --nc'
-alias krita='/opt/Krita/krita-4.1.7-x86_64.appimage'
+alias nuke='/usr/local/Nuke14.0v5/Nuke14.0 --nc'
+alias krita='/opt/Krita/krita-5.2.6-x86_64.appimage'
 alias photoscan='export PSHOME=/opt/photoscan/1.3.4.5067 export QT_PLUGIN_PATH=$PSHOME && export LD_LIBRARY_PATH=/usr/lib:$PSHOME && $PSHOME/photoscan'
-alias houdini='cd /opt/hfs19.0 && source houdini_setup_bash && houdini'
+alias houdini='$HTOA/scripts/htoa.sh'
+alias gaffer='export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GAFFER_HOME/lib && $GAFFER_HOME/bin/gaffer'
 alias r='/opt/resolve/bin/resolve'
+alias blender='/opt/blender-3.6.2-linux-x64/blender'
 alias djv='/usr/local/DJV2/bin/djv.sh'
 alias ue='~/bin/UnrealEngine/Engine/Binaries/Linux/UE4Editor'
 alias pureref='~/bin/PureRef-portable-1.9.2_x64'
@@ -71,6 +76,8 @@ alias ev='expressvpn'
 alias t='mate-terminal -e tmux'
 alias c='mate-calc'
 alias ue='~/bin/UnrealEngine/Engine/Binaries/Linux/UnrealEditor'
+alias rawtherapee='~/bin/RawTherapee_5.10.AppImage'
+alias signal='signal-desktop --password-store="gnome-libsecret"'
 
 #useful unixy things
 alias ls='ls --color=auto'
@@ -101,14 +108,16 @@ alias k5='kill -9 %5'
 alias psg='ps ax | grep '
 alias am=alsamixer
 alias ct='export EDITOR=nano && crontab -e'
-alias dry="pluma ~/Documents/Microsoft\ User\ Dataold/PowerPoint\ Script\ Menu\ Items/.dry";
+alias sd='shutdown -h now'
+
 
 #user scripts
 alias setbeamer='~/Documents/bash_playground/./set_beamer.sh'
 alias unsetbeamer='~/Documents/bash_playground/./unset_beamer.sh'
 alias playlist_shuffle='sh ~/Documents/playlist_shuffle.sh'
 alias resource='source ~/.bashrc'
-alias gpc='mkdir transcoded; for i in *.MP4; do ffmpeg -i $i -vcodec mjpeg -q:v 2 -acodec pcm_s16be -q:a 0 -f mov transcoded/${i%.*}.mov; done'
+alias gpc='mkdir transcoded; for i in *.MP4 *.mp4; do ffmpeg -i $i -vcodec mjpeg -q:v 2 -acodec pcm_s16be -q:a 0 -f mov transcoded/${i%.*}.mov; done'
+alias src='mkdir transcoded; for i in *.MP4 *.mp4; do ffmpeg -i $i -vcodec mpeg4 -acodec pcm_s16le -pix_fmt yuvj420p -q:v 1 transcoded/${i%.*}.mov; done'
 
 
 #awesome specific
@@ -160,3 +169,7 @@ function git_sparse_clone() (
 )
 
 
+. "$HOME/.cargo/env"
+
+alias eww=~/bin/eww/target/release/eww
+alias i3layout='xrandr --output HDMI-0 --primary --mode 1920x1200 --output eDP-1-1 --mode 1920x1080 --right-of HDMI-0'

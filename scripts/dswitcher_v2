@@ -1,0 +1,63 @@
+#!/bin/bash
+
+usage() {
+    echo "Options:
+    -f | --font     <font>      Sets the font
+    -h | --help                 Prints this help message"
+    exit $1
+}
+
+unset dmenu_args
+while [[ $# > 0 ]]; do
+    opt="$1"
+    shift
+
+    case $opt in
+        -f|--font)
+            [[ $# > 0 ]] || usage 1
+            dmenu_args=( -fn "$1" "${dmenu_args[@]}" )
+            shift
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        *)
+            usage 1
+            ;;
+    esac
+done
+
+# Date format, for use as the prompt.
+date=$(date +"%a %d. %b %R")
+
+# dmenu cannot display more than 30 lines, to avoid screen clutter. Only relevant if you have more than 30 windows open.
+heightfit=30
+
+
+dmenu_args=( -b -i -p "Window: " -l "$heightfit" "${dmenu_args[@]}" )
+
+#menu entries with hidden window IDs
+menu=$(mktemp)
+wmctrl -lx | sort -k2 | awk -v OFS='\t' '
+{
+  id = $1
+  desktop = $2+1
+  class = $3
+  title = substr($0, index($0,$5))
+  split(class, parts, ".")
+  app = parts[2]
+  if (desktop != prev_desktop) {
+    if (NR > 1) print "-----"
+      prev_desktop = desktop
+  }
+  display = sprintf("%s %-18s %s", desktop, app, title)
+  print display, id
+}' > "$menu"
+					    
+# Show only the display text in dmenu
+selection=$(cut -f1 "$menu" | dmenu "${dmenu_args[@]}") || exit 1;
+echo "${dmenu_args[@]}"
+# Get the window ID corresponding to the selected line
+[ -n "$selection" ] && id=$(grep -F "$selection" "$menu" | cut -f2 -d$'\t' | head -n1) && wmctrl -i -a "$id"
+					    
+rm -f "$menu"
