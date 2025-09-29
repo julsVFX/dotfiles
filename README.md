@@ -1,1 +1,1 @@
-Personal dotfiles for Linux (bash + awesomeWM cfg)
+Personal dotfiles for Linux (bash + awesomeWM/i3 cfg)
